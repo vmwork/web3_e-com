@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 from enum import Enum
+
 
 class UserStatusEnum(str, Enum):
     ACTIVE = "active"
@@ -9,29 +11,45 @@ class UserStatusEnum(str, Enum):
     PENDING = "pending"
     DANGER = "danger"
 
+
 class WalletTypeEnum(str, Enum):
     EVM = "EVM"
-    SOLANA = "Solana"
+    SOLANA = "SOLANA"
+    TRON = "TRON"
+
 
 class SubscriptionTypeEnum(str, Enum):
     FREE = "free"
     PRO = "pro"
     STUDIO = "studio"
 
+
 class UserBase(BaseModel):
     wallet_address: str = Field(..., min_length=20, max_length=100)
     wallet_type: WalletTypeEnum = Field(default=WalletTypeEnum.EVM)
     display_name: Optional[str] = Field(None, max_length=50)
 
+
 class UserCreate(BaseModel):
     wallet_address: str = Field(..., min_length=20, max_length=100)
     wallet_type: WalletTypeEnum = Field(default=WalletTypeEnum.EVM)
     display_name: Optional[str] = Field(None, max_length=50)
+    email: Optional[str] = Field(None, max_length=255)
+    hashed_password: Optional[str] = None
+
 
 class UserUpdate(BaseModel):
     display_name: Optional[str] = Field(None, max_length=50)
+    email: Optional[str] = Field(None, max_length=255)
+    is_email_verified: Optional[bool] = None
 
-class ShowUser(UserBase):
+
+class ShowUser(BaseModel):
+    id: UUID  # ✅ Добавили UUID
+    wallet_address: str
+    wallet_type: WalletTypeEnum
+    email: Optional[str] = None
+    is_email_verified: bool
     has_paid_entrance: bool
     paid_entrance_at: Optional[datetime] = None
     total_slots: int
@@ -44,8 +62,10 @@ class ShowUser(UserBase):
     fee_percent: int
     status: UserStatusEnum
     role: str
+    display_name: Optional[str] = None
     first_seen: datetime
     last_active: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -56,10 +76,12 @@ class ConnectRequest(BaseModel):
     message: str
     signature: str
 
+
 class TestConnectRequest(BaseModel):
     wallet_address: str = Field(..., min_length=20, max_length=100)
+
 
 class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user: ShowUser  # Автоматическая валидация всей SQLAlchemy модели
+    user: ShowUser

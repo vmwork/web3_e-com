@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, Dict, Any
 
+
 class UserConfigBase(BaseModel):
     theme: Optional[str] = "system"
     language: Optional[str] = "en"
@@ -12,8 +13,10 @@ class UserConfigBase(BaseModel):
     preferences: Optional[Dict[str, Any]] = None
     additional_metadata: Optional[Dict[str, Any]] = None
 
+
 class UserConfigCreate(UserConfigBase):
-    pass
+    user_id: uuid.UUID  # ✅ Теперь UUID
+
 
 class UserConfigUpdate(BaseModel):
     theme: Optional[str] = None
@@ -24,9 +27,10 @@ class UserConfigUpdate(BaseModel):
     preferences: Optional[Dict[str, Any]] = None
     additional_metadata: Optional[Dict[str, Any]] = None
 
+
 class ShowUserConfig(UserConfigBase):
-    id: uuid.UUID  # 🟢 Было int. Теперь нативный UUID v7
-    user_id: str   # 🟢 Было int. Теперь строковый wallet_address кошелька
+    id: uuid.UUID
+    user_id: uuid.UUID  # ✅ Теперь UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 
