@@ -14,6 +14,7 @@ from core.security import (
     verify_password, 
     get_password_hash
 )
+from core.dependencies import get_current_user
 from schemas.user import (
     ConnectRequest, 
     AuthResponse, 
@@ -54,18 +55,15 @@ def connect_wallet(
             status=UserStatus.ACTIVE,
             role="user"
         )
-        # Создаём связанные профили
         profile = Profile(user=user)
         config = UserConfig(user=user)
         db.add_all([user, profile, config])
         db.commit()
         db.refresh(user)
 
-    # Обновляем last_active
     user.last_active = func.now()
     db.commit()
 
-    # Создаём токен с user.id
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -88,7 +86,6 @@ def register_user(
     """
     Регистрация пользователя по email и паролю
     """
-    # Проверка на существование email
     existing_user = db.query(User).filter(User.email == request.email).first()
     if existing_user:
         raise HTTPException(
@@ -96,7 +93,6 @@ def register_user(
             detail="Email already registered"
         )
 
-    # Проверка на существование wallet_address (если указан)
     if request.wallet_address:
         existing_wallet = db.query(User).filter(User.wallet_address == request.wallet_address).first()
         if existing_wallet:
@@ -105,12 +101,10 @@ def register_user(
                 detail="Wallet address already registered"
             )
 
-    # Хешируем пароль
     hashed_password = get_password_hash(request.password)
 
-    # Создаём пользователя
     user = User(
-        wallet_address=request.wallet_address or f"email_{request.email}",  # заглушка
+        wallet_address=request.wallet_address or f"email_{request.email}",
         wallet_type="EMAIL",
         email=request.email,
         hashed_password=hashed_password,
@@ -126,7 +120,6 @@ def register_user(
     db.commit()
     db.refresh(user)
 
-    # Создаём токен
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -147,7 +140,6 @@ def login_user(
     """
     Вход по email и паролю
     """
-    # Ищем пользователя по email
     user = db.query(User).filter(User.email == request.email).first()
     
     if not user:
@@ -156,14 +148,12 @@ def login_user(
             detail="Invalid email or password"
         )
 
-    # Проверяем пароль
     if not verify_password(request.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
 
-    # Проверяем статус
     if user.status == UserStatus.BLOCKED:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -176,12 +166,10 @@ def login_user(
             detail="Please verify your email first"
         )
 
-    # Обновляем last_login_at и last_active
     user.last_login_at = func.now()
     user.last_active = func.now()
     db.commit()
 
-    # Создаём токен
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)

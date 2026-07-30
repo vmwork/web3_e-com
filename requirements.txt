@@ -8,11 +8,10 @@ python-dotenv==1.0.1
 alembic==1.14.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1                                 
 python-multipart==0.0.20
 eth-account==0.13.7
 eth-keys==0.6.1
 eth-utils==5.1.0
-hexbytes==1.2.1
-rlp==4.0.1
 hexbytes==1.2.1
 rlp==4.0.1
