@@ -20,11 +20,6 @@ from db.session import engine
 from db.base import Base
 
 
-def create_tables():
-    """Принудительная инициализация структуры таблиц в PostgreSQL"""
-    Base.metadata.create_all(bind=engine)
-
-
 def start_application() -> FastAPI:
     """Фабрика инициализации Enterprise Web3 API приложения"""
     app = FastAPI(
@@ -95,7 +90,7 @@ def start_application() -> FastAPI:
     app.openapi = custom_openapi
     # ============================================================
     
-    create_tables()
+    # ✅ УБИРАЕМ ВЫЗОВ create_tables()
     
     return app
 

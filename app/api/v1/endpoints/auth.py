@@ -245,8 +245,10 @@ def register_user(
     db: Session = Depends(get_db)
 ):
     """
-    Регистрация пользователя по email и паролю
+    Регистрация пользователя по email и паролю.
+    Автоматически создаёт профиль и настройки.
     """
+    # Проверка существующего email
     existing_user = db.query(User).filter(User.email == request.email).first()
     if existing_user:
         raise HTTPException(
@@ -254,16 +256,19 @@ def register_user(
             detail="Email already registered"
         )
 
+    # Проверка существующего кошелька (если указан)
     if request.wallet_address:
         existing_wallet = db.query(User).filter(User.wallet_address == request.wallet_address).first()
         if existing_wallet:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User registered"
+                detail="Wallet already registered"
             )
 
+    # Хешируем пароль
     hashed_password = get_password_hash(request.password)
 
+    # 1. Создаём пользователя
     user = User(
         wallet_address=request.wallet_address,
         wallet_type=None,
@@ -274,13 +279,36 @@ def register_user(
         status=UserStatus.PENDING,
         role="user"
     )
+    db.add(user)
+    db.flush()  # 👈 Получаем user.id
 
-    profile = Profile(user=user)
-    config = UserConfig(user=user)
-    db.add_all([user, profile, config])
+    # 2. Создаём профиль (явно указываем user_id)
+    profile = Profile(
+        user_id=user.id,
+        bio=None,
+        social_links=None,
+        extra_data=None
+    )
+    db.add(profile)
+
+    # 3. Создаём настройки (явно указываем user_id)
+    config = UserConfig(
+        user_id=user.id,
+        theme="system",
+        language="en",
+        timezone="UTC",
+        notifications=None,
+        privacy=None,
+        preferences=None,
+        additional_metadata=None
+    )
+    db.add(config)
+
+    # 4. Сохраняем всё
     db.commit()
     db.refresh(user)
 
+    # 5. Создаём токен
     access_token = create_access_token(
         data={"sub": str(user.id)},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -291,7 +319,6 @@ def register_user(
         "token_type": "bearer",
         "user": user
     }
-
 
 @router.post("/login", response_model=AuthResponse, status_code=status.HTTP_200_OK)
 def login_user(

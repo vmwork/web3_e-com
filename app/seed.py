@@ -25,7 +25,7 @@ def seed_crypto_admin():
         if not admin:
             print(f"🚀 СИД: Создание дефолтного суперадмина ({ADMIN_WALLET})...")
             new_admin = User(
-                wallet_address=ADMIN_WALLET,
+                wallet_address=ADMIN_WALLET,  # ✅ Кошелёк админа
                 wallet_type="EVM",
                 status=UserStatus.ACTIVE,
                 role="admin",
@@ -63,18 +63,17 @@ def seed_test_users():
         # Проверяем, есть ли тестовые пользователи
         existing = db.query(User).filter(User.email.in_([
             "admin@example.com",
-            "user@example.com",
-            "seller@example.com"
+            "user@example.com"
         ])).first()
         
         if existing:
             print("ℹ️ СИД: Тестовые пользователи уже существуют, пропускаем...")
             return
         
-        # Админ (email)
+        # ✅ Админ (email) — БЕЗ wallet_address
         admin = User(
-            wallet_address="admin_email_wallet",
-            wallet_type="EMAIL",
+            wallet_address=None,  # ✅ Нет кошелька
+            wallet_type=None,
             email="admin@example.com",
             hashed_password=get_password_hash("admin123"),
             is_email_verified=True,
@@ -87,10 +86,10 @@ def seed_test_users():
         admin.config = UserConfig(theme="dark", language="en")
         db.add(admin)
         
-        # Обычный пользователь
+        # ✅ Обычный пользователь — БЕЗ wallet_address
         user = User(
-            wallet_address="user_email_wallet",
-            wallet_type="EMAIL",
+            wallet_address=None,  # ✅ Нет кошелька
+            wallet_type=None,
             email="user@example.com",
             hashed_password=get_password_hash("user123"),
             is_email_verified=True,
@@ -123,7 +122,6 @@ def seed_categories():
     db = SessionLocal()
     
     try:
-        # Проверяем, есть ли категории
         existing = db.query(Category).first()
         if existing:
             print("ℹ️ СИД: Категории уже существуют, пропускаем...")
@@ -159,13 +157,11 @@ def seed_test_products():
     db = SessionLocal()
     
     try:
-        # Проверяем, есть ли продукты
         existing = db.query(Product).first()
         if existing:
             print("ℹ️ СИД: Продукты уже существуют, пропускаем...")
             return
         
-        # Получаем админа и категории
         admin = db.query(User).filter(User.role == "admin").first()
         if not admin:
             print("⚠️ СИД: Админ не найден, пропускаем создание продуктов...")
@@ -176,7 +172,6 @@ def seed_test_products():
             print("⚠️ СИД: Категории не найдены, пропускаем создание продуктов...")
             return
         
-        # Создаём тестовые продукты
         products = [
             {
                 "title": "Mastering Python: Advanced Guide",
@@ -222,7 +217,7 @@ def seed_test_products():
                 download_limit=prod_data["download_limit"],
                 status=ProductStatus.PUBLISHED,
                 is_active=True,
-                is_featured=idx == 0,  # Первый продукт - featured
+                is_featured=idx == 0,
                 preview_images=["https://via.placeholder.com/300x200"],
                 tags=["python", "react", "design"],
                 rating_avg=4.5,

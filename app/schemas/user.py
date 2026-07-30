@@ -29,6 +29,7 @@ class UserBase(BaseModel):
     wallet_type: Optional[WalletTypeEnum] = None
     display_name: Optional[str] = Field(None, max_length=50)
 
+
 class LoginRequest(BaseModel):
     email: str = Field(..., max_length=255)
     password: str = Field(..., min_length=6)
@@ -39,6 +40,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(..., min_length=6)
     display_name: Optional[str] = Field(None, max_length=50)
     wallet_address: Optional[str] = Field(None, min_length=20, max_length=100)
+
 
 class PasswordChangeRequest(BaseModel):
     old_password: str = Field(..., min_length=6)
@@ -60,9 +62,9 @@ class UserUpdate(BaseModel):
 
 
 class ShowUser(BaseModel):
-    id: UUID  
-    wallet_address: str
-    wallet_type: Optional[str] = None 
+    id: UUID
+    wallet_address: Optional[str] = None  # ✅ Сделал Optional
+    wallet_type: Optional[str] = None
     email: Optional[str] = None
     is_email_verified: bool
     has_paid_entrance: bool
@@ -91,10 +93,8 @@ class ConnectRequest(BaseModel):
     message: str
     signature: str
 
-class TestConnectRequest(BaseModel):
-    wallet_address: str = Field(..., min_length=20, max_length=100)
 
-class TestConnectRequest(BaseModel):
+class TestConnectRequest(BaseModel):  # ✅ Один раз
     wallet_address: str = Field(..., min_length=20, max_length=100)
 
 

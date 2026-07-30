@@ -11,6 +11,7 @@ from models.download_token import DownloadToken
 from models.order_item import OrderItem
 from models.order import OrderStatus
 from models.user import User
+from models.order import Order, OrderStatus 
 from schemas.download_token import DownloadTokenCreate
 from core.dependencies import get_current_user
 from core.config import settings

@@ -9,9 +9,21 @@ from core.dependencies import get_current_user
 router = APIRouter(prefix="/profiles", tags=["Profiles"])
 
 @router.get("/me", response_model=ShowProfile)
-def get_my_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Получить публичный анонимный профиль текущего кошелька"""
-    return db.query(Profile).filter(Profile.user_id == current_user.wallet_address).first()
+def get_my_profile(
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """Получить профиль текущего пользователя"""
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()  # ✅ user.id
+    
+    # Если профиля нет — создаём (на всякий случай)
+    if not profile:
+        profile = Profile(user_id=current_user.id)
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+    
+    return profile
 
 @router.put("/me", response_model=ShowProfile)
 def update_my_profile(
@@ -19,10 +31,11 @@ def update_my_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Обновить данные профиля (bio, social_links, extra_data)"""
-    profile = db.query(Profile).filter(Profile.user_id == current_user.wallet_address).first()
+    """Обновить данные профиля"""
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()  # ✅ user.id
+    
     if not profile:
-        profile = Profile(user_id=current_user.wallet_address)
+        profile = Profile(user_id=current_user.id)
         db.add(profile)
     
     update_data = profile_update.model_dump(exclude_unset=True)

@@ -17,7 +17,6 @@ done
 echo -e "\n🟢 База данных готова к работе!"
 
 echo "⚙️  Применение миграций Alembic..."
-# Переходим в корень проекта, где лежит alembic.ini
 cd /app
 alembic upgrade head
 
