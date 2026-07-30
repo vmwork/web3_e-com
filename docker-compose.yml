@@ -1,0 +1,49 @@
+services:
+  crypto_postgres:
+    image: postgres:15-alpine
+    container_name: crypto_postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_crypto_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crypto_network
+
+  backend:
+      build: .
+      container_name: crypto_backend_app
+      command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --app-dir /app/app
+      volumes:
+        - ./app:/app/app
+        - ./.env:/app/.env
+      ports:
+        - "8000:8000"
+      environment:
+        - DATABASE_URL=${DATABASE_URL}
+        - POSTGRES_SERVER=${POSTGRES_SERVER}
+        - POSTGRES_PORT=${POSTGRES_PORT}
+        - POSTGRES_USER=${POSTGRES_USER}
+        - SECRET_KEY=${SECRET_KEY}
+        - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+        - PYTHONDONTWRITEBYTECODE=1
+      depends_on:
+        crypto_postgres:
+          condition: service_healthy
+      networks:
+        - crypto_network
+
+volumes:
+  postgres_crypto_data:
+
+networks:
+  crypto_network:
+    driver: bridge
