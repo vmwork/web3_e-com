@@ -13,14 +13,15 @@ def get_my_config(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Получить системные настройки интерфейса для текущего кошелька"""
-    config = db.query(UserConfig).filter(UserConfig.user_id == current_user.wallet_address).first()
+    """Получить настройки текущего пользователя"""
+    config = db.query(UserConfig).filter(UserConfig.user_id == current_user.id).first()  # ✅ user.id
     if not config:
-        config = UserConfig(user_id=current_user.wallet_address)
+        config = UserConfig(user_id=current_user.id)
         db.add(config)
         db.commit()
         db.refresh(config)
     return config
+
 
 @router.put("/me", response_model=ShowUserConfig)
 def update_my_config(
@@ -28,10 +29,10 @@ def update_my_config(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Обновить настройки кошелька (тема, язык, уведомления, приватность)"""
-    config = db.query(UserConfig).filter(UserConfig.user_id == current_user.wallet_address).first()
+    """Обновить настройки пользователя"""
+    config = db.query(UserConfig).filter(UserConfig.user_id == current_user.id).first()  # ✅ user.id
     if not config:
-        config = UserConfig(user_id=current_user.wallet_address)
+        config = UserConfig(user_id=current_user.id)
         db.add(config)
         
     update_data = config_update.model_dump(exclude_unset=True)

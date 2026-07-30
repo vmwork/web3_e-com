@@ -29,6 +29,21 @@ class UserBase(BaseModel):
     wallet_type: WalletTypeEnum = Field(default=WalletTypeEnum.EVM)
     display_name: Optional[str] = Field(None, max_length=50)
 
+class LoginRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=6)
+
+
+class RegisterRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=6)
+    display_name: Optional[str] = Field(None, max_length=50)
+    wallet_address: Optional[str] = Field(None, min_length=20, max_length=100)
+
+class PasswordChangeRequest(BaseModel):
+    old_password: str = Field(..., min_length=6)
+    new_password: str = Field(..., min_length=6)
+
 
 class UserCreate(BaseModel):
     wallet_address: str = Field(..., min_length=20, max_length=100)
