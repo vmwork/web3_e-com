@@ -12,6 +12,7 @@ from schemas.user import (
     UserStatusEnum,
     WalletTypeEnum,
     SubscriptionTypeEnum,
+    TestConnectRequest,
 )
 from schemas.profile import ProfileBase, ProfileCreate, ProfileUpdate, ShowProfile
 from schemas.user_config import UserConfigBase, UserConfigCreate, UserConfigUpdate, ShowUserConfig
@@ -23,7 +24,6 @@ from schemas.review import ReviewBase, ReviewCreate, ReviewUpdate, ShowReview
 from schemas.download_token import DownloadTokenBase, DownloadTokenCreate, ShowDownloadToken
 
 __all__ = [
-    # User
     "UserBase",
     "UserCreate",
     "UserUpdate",
@@ -37,43 +37,36 @@ __all__ = [
     "UserStatusEnum",
     "WalletTypeEnum",
     "SubscriptionTypeEnum",
-    # Profile
+    "TestConnectRequest",
     "ProfileBase",
     "ProfileCreate",
     "ProfileUpdate",
     "ShowProfile",
-    # UserConfig
     "UserConfigBase",
     "UserConfigCreate",
     "UserConfigUpdate",
     "ShowUserConfig",
-    # Category
     "CategoryBase",
     "CategoryCreate",
     "CategoryUpdate",
     "ShowCategory",
-    # Product
     "ProductBase",
     "ProductCreate",
     "ProductUpdate",
     "ShowProduct",
     "ProductStatusEnum",
-    # Order
     "OrderBase",
     "OrderCreate",
     "OrderUpdate",
     "ShowOrder",
     "OrderStatusEnum",
-    # OrderItem
     "OrderItemBase",
     "OrderItemCreate",
     "ShowOrderItem",
-    # Review
     "ReviewBase",
     "ReviewCreate",
     "ReviewUpdate",
     "ShowReview",
-    # DownloadToken
     "DownloadTokenBase",
     "DownloadTokenCreate",
     "ShowDownloadToken",

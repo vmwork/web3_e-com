@@ -1,7 +1,9 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
+import os
 
 from db.session import get_db
 from models.user import User, UserStatus
@@ -16,7 +18,8 @@ from core.security import (
 )
 from core.dependencies import get_current_user
 from schemas.user import (
-    ConnectRequest, 
+    ConnectRequest,
+    TestConnectRequest,  # ✅ ДОБАВЛЯЕМ ИМПОРТ
     AuthResponse, 
     LoginRequest, 
     RegisterRequest,
@@ -24,6 +27,61 @@ from schemas.user import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+
+# ==================== OAuth2 СТАНДАРТНЫЙ ЭНДПОИНТ ====================
+
+@router.post("/token", response_model=AuthResponse)
+def login_for_access_token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    """
+    Стандартный OAuth2 эндпоинт для получения токена.
+    Используется Swagger UI для авторизации.
+    """
+    user = db.query(User).filter(User.email == form_data.username).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if user.status == UserStatus.BLOCKED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is blocked"
+        )
+
+    if user.status == UserStatus.PENDING and user.wallet_type == "EMAIL":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email first"
+        )
+
+    user.last_login_at = func.now()
+    user.last_active = func.now()
+    db.commit()
+
+    access_token = create_access_token(
+        data={"sub": str(user.id)},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
 
 
 # ==================== WEB3 АУТЕНТИФИКАЦИЯ ====================
@@ -76,6 +134,53 @@ def connect_wallet(
     }
 
 
+# ==================== ТЕСТОВЫЙ ЭНДПОИНТ ДЛЯ SWAGGER (WEB3) ====================
+
+@router.post("/connect/test", response_model=AuthResponse, status_code=status.HTTP_200_OK)
+def test_connect_wallet(
+    request: TestConnectRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    ⚠️ ТЕСТОВЫЙ эндпоинт для быстрой авторизации через кошелёк (только для разработки!)
+    Не используйте в продакшене!
+    """
+    wallet_address = request.wallet_address
+    
+    user = db.query(User).filter(User.wallet_address == wallet_address).first()
+    
+    if not user:
+        is_admin = wallet_address == os.getenv("ADMIN_WALLET_ADDRESS", "0x90F8bf6A479f320ced073E5743F257356671B414")
+        
+        user = User(
+            wallet_address=wallet_address,
+            wallet_type="EVM",
+            status=UserStatus.ACTIVE,
+            role="admin" if is_admin else "user",
+            display_name="Crypto Admin" if is_admin else "Test User",
+            has_paid_entrance=True
+        )
+        profile = Profile(user=user)
+        config = UserConfig(user=user)
+        db.add_all([user, profile, config])
+        db.commit()
+        db.refresh(user)
+    
+    user.last_active = func.now()
+    db.commit()
+    
+    access_token = create_access_token(
+        data={"sub": str(user.id)},
+        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": user
+    }
+
+
 # ==================== EMAIL АУТЕНТИФИКАЦИЯ ====================
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -105,7 +210,7 @@ def register_user(
 
     user = User(
         wallet_address=request.wallet_address or f"email_{request.email}",
-        wallet_type="EMAIL",
+        wallet_type=None,
         email=request.email,
         hashed_password=hashed_password,
         is_email_verified=False,

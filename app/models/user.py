@@ -28,7 +28,7 @@ class User(Base):
     
     # wallet_address теперь UNIQUE, но НЕ primary key
     wallet_address = Column(String(100), unique=True, nullable=False, index=True)
-    wallet_type = Column(String(20), default="EVM")
+    wallet_type = Column(String(20), nullable=True)
     
     email = Column(String(255), unique=True, nullable=True, index=True)
     hashed_password = Column(String(255), nullable=True)

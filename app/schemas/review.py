@@ -31,7 +31,7 @@ class ShowReview(ReviewBase):
     user_id: uuid.UUID
     order_id: Optional[uuid.UUID] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

@@ -1,5 +1,5 @@
-import uuid
 from pydantic import BaseModel, Field
+from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
 from enum import Enum
@@ -31,7 +31,8 @@ class OrderBase(BaseModel):
 
 
 class OrderCreate(OrderBase):
-    buyer_id: uuid.UUID  # ✅ UUID
+    buyer_id: UUID
+    items: List["OrderItemCreate"] = []  # строка
 
 
 class OrderUpdate(BaseModel):
@@ -42,13 +43,18 @@ class OrderUpdate(BaseModel):
 
 
 class ShowOrder(OrderBase):
-    id: uuid.UUID
-    buyer_id: uuid.UUID
+    id: UUID
+    buyer_id: UUID
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None 
     paid_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
-    items: Optional[List["ShowOrderItem"]] = None
+    items: Optional[List["ShowOrderItem"]] = None  # строка
 
     class Config:
         from_attributes = True
+
+
+from schemas.order_item import OrderItemCreate, ShowOrderItem
+OrderCreate.model_rebuild()
+ShowOrder.model_rebuild()

@@ -60,9 +60,9 @@ class UserUpdate(BaseModel):
 
 
 class ShowUser(BaseModel):
-    id: UUID  # ✅ Добавили UUID
+    id: UUID  
     wallet_address: str
-    wallet_type: WalletTypeEnum
+    wallet_type: Optional[str] = None 
     email: Optional[str] = None
     is_email_verified: bool
     has_paid_entrance: bool
@@ -91,6 +91,8 @@ class ConnectRequest(BaseModel):
     message: str
     signature: str
 
+class TestConnectRequest(BaseModel):
+    wallet_address: str = Field(..., min_length=20, max_length=100)
 
 class TestConnectRequest(BaseModel):
     wallet_address: str = Field(..., min_length=20, max_length=100)

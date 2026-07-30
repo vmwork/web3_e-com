@@ -1,5 +1,5 @@
-import uuid
 from pydantic import BaseModel, Field
+from uuid import UUID
 from datetime import datetime
 from typing import Optional
 
@@ -14,16 +14,16 @@ class OrderItemBase(BaseModel):
 
 
 class OrderItemCreate(OrderItemBase):
-    order_id: uuid.UUID
-    product_id: uuid.UUID
+    order_id: UUID
+    product_id: UUID
 
 
 class ShowOrderItem(OrderItemBase):
-    id: uuid.UUID
-    order_id: uuid.UUID
-    product_id: uuid.UUID
+    id: UUID
+    order_id: UUID
+    product_id: UUID
     download_count: int
-    last_download_at: Optional[datetime] = None
+    last_download_at: Optional[datetime] = None 
     created_at: datetime
 
     class Config:
