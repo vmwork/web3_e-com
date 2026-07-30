@@ -27,7 +27,7 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid7, index=True)
     
     # wallet_address теперь UNIQUE, но НЕ primary key
-    wallet_address = Column(String(100), unique=True, nullable=False, index=True)
+    wallet_address = Column(String(100), unique=True, nullable=True, index=True)
     wallet_type = Column(String(20), nullable=True)
     
     email = Column(String(255), unique=True, nullable=True, index=True)

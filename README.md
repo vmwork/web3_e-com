@@ -29,6 +29,7 @@
 - **Web3** — вход через криптокошелёк (MetaMask/WalletConnect) с проверкой подписи
 - **Email** — регистрация и вход по email + пароль (bcrypt хеширование)
 - **JWT токены** — безопасная авторизация с истечением срока действия
+- **OAuth2** — стандартная форма авторизации в Swagger UI
 
 ### 🛍️ Основной функционал
 - **Продукты** — CRUD для цифровых товаров (только админ)
@@ -159,8 +160,7 @@ pip install -r requirements.txt
 # Запустить приложение
 cd app
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
-
-Приложение будет доступно по адресу: **[http://localhost:8000](http://localhost:8000)**
+Приложение будет доступно по адресу: http://localhost:8000
 
 🔐 Тестовые данные
 После запуска в базе автоматически создаются:
@@ -177,8 +177,11 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 POST	/api/v1/auth/connect	Вход через Web3 (криптокошелёк)	Публичный
 POST	/api/v1/auth/register	Регистрация по email + пароль	Публичный
 POST	/api/v1/auth/login	Вход по email + пароль	Публичный
+POST	/api/v1/auth/token	OAuth2 эндпоинт для Swagger	Публичный
 POST	/api/v1/auth/logout	Выход из системы	Авторизованный
 GET	/api/v1/auth/me	Информация о текущем пользователе	Авторизованный
+POST	/api/v1/auth/connect/wallet	Привязка кошелька к email-аккаунту	Авторизованный
+DELETE	/api/v1/auth/connect/wallet	Отвязка кошелька от аккаунта	Авторизованный
 👤 Пользователи
 Метод	Эндпоинт	Описание	Доступ
 GET	/api/v1/users/me	Профиль текущего пользователя	Авторизованный
@@ -232,9 +235,11 @@ GET	/health	Healthcheck	Публичный
 📑 Интерактивная документация
 После запуска доступны:
 
-* **Swagger UI (Рекомендуется):** [http://localhost:8000/docs](http://localhost:8000/docs)
-* **ReDoc UI:** [http://localhost:8000/redoc](http://localhost:8000/redoc)
+Swagger UI: http://localhost:8000/api/docs
 
+ReDoc UI: http://localhost:8000/api/redoc
+
+OpenAPI JSON: http://localhost:8000/api/openapi.json
 
 🐳 Docker-команды
 bash

@@ -180,6 +180,62 @@ def test_connect_wallet(
         "user": user
     }
 
+@router.post("/connect/wallet", response_model=ShowUser, status_code=status.HTTP_200_OK)
+def connect_wallet_to_account(
+    request: ConnectRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Привязка криптокошелька к существующему email-аккаунту.
+    """
+    wallet_address = request.wallet_address
+    message = request.message
+    signature = request.signature
+
+    # Проверяем подпись
+    if not verify_wallet_signature(wallet_address, message, signature):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid wallet signature"
+        )
+
+    # Проверяем, не привязан ли уже этот кошелёк к другому аккаунту
+    existing_user = db.query(User).filter(User.wallet_address == wallet_address).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Wallet already connected to another account"
+        )
+
+    # Привязываем кошелёк к текущему пользователю
+    current_user.wallet_address = wallet_address
+    current_user.wallet_type = "EVM"  # или определять по подписи
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
+
+@router.delete("/connect/wallet", response_model=ShowUser, status_code=status.HTTP_200_OK)
+def disconnect_wallet(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Отвязка криптокошелька от аккаунта.
+    """
+    if not current_user.wallet_address:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No wallet connected"
+        )
+
+    current_user.wallet_address = None
+    current_user.wallet_type = None
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
 
 # ==================== EMAIL АУТЕНТИФИКАЦИЯ ====================
 
@@ -203,13 +259,13 @@ def register_user(
         if existing_wallet:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Wallet address already registered"
+                detail="User registered"
             )
 
     hashed_password = get_password_hash(request.password)
 
     user = User(
-        wallet_address=request.wallet_address or f"email_{request.email}",
+        wallet_address=request.wallet_address,
         wallet_type=None,
         email=request.email,
         hashed_password=hashed_password,

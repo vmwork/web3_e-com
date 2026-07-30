@@ -25,8 +25,8 @@ class SubscriptionTypeEnum(str, Enum):
 
 
 class UserBase(BaseModel):
-    wallet_address: str = Field(..., min_length=20, max_length=100)
-    wallet_type: WalletTypeEnum = Field(default=WalletTypeEnum.EVM)
+    wallet_address: Optional[str] = Field(None, min_length=20, max_length=100)
+    wallet_type: Optional[WalletTypeEnum] = None
     display_name: Optional[str] = Field(None, max_length=50)
 
 class LoginRequest(BaseModel):
