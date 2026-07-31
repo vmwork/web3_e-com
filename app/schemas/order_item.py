@@ -13,9 +13,9 @@ class OrderItemBase(BaseModel):
     subtotal: float = Field(..., gt=0)
 
 
-class OrderItemCreate(OrderItemBase):
-    order_id: UUID
-    product_id: UUID
+class OrderItemCreate(BaseModel):
+    product_id: UUID = Field(..., description="ID продукта")
+    quantity: int = Field(1, ge=1, description="Количество")
 
 
 class ShowOrderItem(OrderItemBase):

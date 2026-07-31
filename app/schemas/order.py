@@ -30,9 +30,16 @@ class OrderBase(BaseModel):
     payment_amount: Optional[float] = None
 
 
-class OrderCreate(OrderBase):
+class OrderCreate(BaseModel):
     buyer_id: UUID
-    items: List["OrderItemCreate"] = []  # строка
+    items: List["OrderItemCreate"] = []
+    tax_amount: float = 0.0
+    discount_amount: float = 0.0
+    currency: str = "USD"
+    payment_method: Optional[str] = Field(None, max_length=50)
+    payment_currency: Optional[str] = Field(None, max_length=10)
+    payment_amount: Optional[float] = None
+    buyer_email: Optional[str] = Field(None, max_length=255)
 
 
 class OrderUpdate(BaseModel):

@@ -1,7 +1,11 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, status  # 👈 Добавь status
+from fastapi.responses import JSONResponse  # 👈 Добавь JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from sqlalchemy.exc import IntegrityError
+import re  # 👈 Добавь re
+
 import os
 
 from api.v1.endpoints import (
@@ -96,6 +100,55 @@ def start_application() -> FastAPI:
 
 
 app = start_application()
+
+# ==================== ГЛОБАЛЬНЫЕ ОБРАБОТЧИКИ ОШИБОК ====================
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request, exc):
+    """Обработчик ошибок целостности БД"""
+    error_msg = str(exc)
+    
+    if "null value in column" in error_msg:
+        # Извлекаем название колонки из ошибки
+        match = re.search(r'column "(\w+)"', error_msg)
+        column_name = match.group(1) if match else "unknown"
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "detail": f"Field '{column_name}' is required and cannot be empty.",
+                "error": error_msg
+            }
+        )
+    
+    if "foreign key constraint" in error_msg:
+        match = re.search(r'Key \((.*?)\)=', error_msg)
+        field_name = match.group(1) if match else "unknown"
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={
+                "detail": f"Invalid reference: '{field_name}' does not exist.",
+                "error": error_msg
+            }
+        )
+    
+    if "unique constraint" in error_msg:
+        match = re.search(r'Key \((.*?)\)=', error_msg)
+        field_name = match.group(1) if match else "unknown"
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail": f"Duplicate value for field '{field_name}'. This value already exists.",
+                "error": error_msg
+            }
+        )
+    
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            "detail": "Database integrity error",
+            "error": error_msg
+        }
+    )
 
 
 @app.get("/", tags=["System"])

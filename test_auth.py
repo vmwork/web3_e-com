@@ -28,11 +28,11 @@ import requests
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 AUTH_ENDPOINT = f"{API_URL}/api/v1/auth/connect"
+WALLET_ENDPOINT = f"{API_URL}/api/v1/auth/connect/wallet"
 
 # Test private key (DO NOT use in production!)
 # You can replace this with your own key or set PRIVATE_KEY env var
-DEFAULT_PRIVATE_KEY = "0x4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
-SIGN_MESSAGE = "Sign in to OneWay API"
+DEFAULT_PRIVATE_KEY = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
 
 # ============================================================
@@ -57,7 +57,7 @@ def sign_message(message: str, private_key: str) -> str:
     """Sign a message using the private key."""
     message_hash = encode_defunct(text=message)
     signed = Account.sign_message(message_hash, private_key)
-    return signed.signature.hex()
+    return "0x" + signed.signature.hex()  # 👈 Добавляем 0x
 
 
 def decode_jwt(token: str) -> dict:
@@ -109,19 +109,22 @@ def main():
 
     # 2. Sign message
     print("\n[2] Signing message...")
-    signature = sign_message(SIGN_MESSAGE, private_key)
-    print(f"    Message: {SIGN_MESSAGE}")
+    # 👇 Сообщение должно совпадать с тем, что ожидает сервер
+    message = f"Sign in to OneWay API with wallet {wallet_address}"
+    signature = sign_message(message, private_key)
+    print(f"    Message: {message}")
     print(f"    Signature: {signature[:30]}...")
 
     # 3. Build request
     print("\n[3] Sending request...")
     payload = {
         "wallet_address": wallet_address,
-        "message": SIGN_MESSAGE,
+        "message": message,
         "signature": signature,
     }
 
     try:
+        # Пробуем через /auth/connect
         response = requests.post(AUTH_ENDPOINT, json=payload, timeout=10)
         print(f"    Status: {response.status_code}")
 
@@ -140,7 +143,10 @@ def main():
                 print_section("[6] User Data", data["user"])
 
             print("\n✅ Authentication successful!")
-            print(f"   Token expires: {datetime.fromtimestamp(decoded.get('exp', 0)).strftime('%Y-%m-%d %H:%M:%S')}")
+            if "access_token" in data:
+                decoded = decode_jwt(data["access_token"])
+                if "exp" in decoded:
+                    print(f"   Token expires: {datetime.fromtimestamp(decoded['exp']).strftime('%Y-%m-%d %H:%M:%S')}")
 
         elif response.status_code == 401:
             print("\n❌ Authentication failed: Invalid signature")
@@ -170,6 +176,27 @@ def main():
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
         sys.exit(1)
+
+    # ============================================================
+    # ДОПОЛНИТЕЛЬНО: привязка кошелька к email-аккаунту
+    # ============================================================
+    print_header("Привязка кошелька к email-аккаунту")
+    print("\n[7] Если нужно привязать кошелёк к существующему email-аккаунту:")
+    print("    1. Сначала получи токен через /api/v1/auth/login")
+    print("    2. Затем отправь POST на /api/v1/auth/connect/wallet")
+    print(f"    3. Используй этот wallet_address: {wallet_address}")
+    print(f"    4. Используй эту signature: {signature}")
+    print("\nПример запроса:")
+    print(f"""
+curl -X POST {WALLET_ENDPOINT} \\
+  -H "Authorization: Bearer <ВАШ_ТОКЕН_ОТ_EMAIL_ЛОГИНА>" \\
+  -H "Content-Type: application/json" \\
+  -d '{{
+    "wallet_address": "{wallet_address}",
+    "message": "{message}",
+    "signature": "{signature}"
+  }}'
+    """)
 
 
 if __name__ == "__main__":

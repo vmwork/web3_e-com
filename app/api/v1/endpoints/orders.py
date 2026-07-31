@@ -15,7 +15,7 @@ from models.user import User
 from schemas.order import OrderCreate, OrderUpdate, ShowOrder
 from schemas.order_item import OrderItemCreate
 from core.dependencies import get_current_user, get_current_admin_user
-
+from models.product import Product, ProductStatus
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
@@ -87,6 +87,13 @@ def create_order(
     """
     Создать новый заказ
     """
+    # Проверка: есть ли у пользователя кошелёк
+    if not current_user.wallet_address:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User does not have a wallet. Please connect your wallet first."
+        )
+    
     # Проверка: товары должны существовать
     total_subtotal = 0
     items_data = []
@@ -116,6 +123,44 @@ def create_order(
             "quantity": item.quantity,
             "subtotal": subtotal
         })
+    
+    # Создаём заказ
+    order = Order(
+        order_number=generate_order_number(),
+        buyer_id=current_user.id,
+        subtotal=total_subtotal,
+        tax_amount=order_data.tax_amount or 0,
+        discount_amount=order_data.discount_amount or 0,
+        total_amount=total_subtotal + (order_data.tax_amount or 0) - (order_data.discount_amount or 0),
+        currency=order_data.currency or "USD",
+        status=OrderStatus.PENDING,
+        buyer_email=current_user.email or order_data.buyer_email,
+        buyer_wallet=current_user.wallet_address,
+        payment_method=order_data.payment_method,
+        payment_currency=order_data.payment_currency,
+        payment_amount=order_data.payment_amount
+    )
+    
+    db.add(order)
+    db.flush()  # 👈 Чтобы получить order.id
+    
+    # Создаём элементы заказа
+    for item_data in items_data:
+        order_item = OrderItem(
+            order_id=order.id,  # 👈 order_id берётся из созданного заказа
+            **item_data
+        )
+        db.add(order_item)
+        
+        # Увеличиваем счётчик покупок у продукта
+        product = db.query(Product).filter(Product.id == item_data["product_id"]).first()
+        if product:
+            product.purchases_count += 1
+    
+    db.commit()
+    db.refresh(order)
+    
+    return order
     
     # Создаём заказ
     order = Order(
