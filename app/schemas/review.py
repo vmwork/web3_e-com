@@ -12,9 +12,11 @@ class ReviewBase(BaseModel):
     is_approved: bool = False
 
 
-class ReviewCreate(ReviewBase):
+class ReviewCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    title: Optional[str] = Field(None, max_length=255)
+    comment: Optional[str] = None
     product_id: uuid.UUID
-    user_id: uuid.UUID
     order_id: Optional[uuid.UUID] = None
 
 

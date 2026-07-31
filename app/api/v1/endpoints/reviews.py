@@ -14,6 +14,8 @@ from core.dependencies import get_current_user, get_current_admin_user
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
 
+# ==================== ПУБЛИЧНЫЕ ЭНДПОИНТЫ ====================
+
 @router.get("/products/{product_id}", response_model=List[ShowReview])
 def get_product_reviews(
     product_id: UUID,
@@ -22,7 +24,7 @@ def get_product_reviews(
     db: Session = Depends(get_db)
 ):
     """
-    Получить отзывы на продукт
+    Получить отзывы на продукт (только одобренные)
     """
     reviews = db.query(Review).options(
         joinedload(Review.user)
@@ -76,8 +78,13 @@ def create_review(
         if order:
             is_verified = True
     
+    # Создаём отзыв
     review = Review(
-        **review_data.model_dump(),
+        rating=review_data.rating,
+        title=review_data.title,
+        comment=review_data.comment,
+        product_id=review_data.product_id,
+        order_id=review_data.order_id,
         user_id=current_user.id,
         is_verified_purchase=is_verified,
         is_approved=False  # Требуется модерация
@@ -186,6 +193,26 @@ def update_product_rating(db: Session, product_id: UUID):
 
 # ==================== АДМИН-ЭНДПОИНТЫ ====================
 
+@router.get("/admin/all", response_model=List[ShowReview])
+def get_all_reviews_admin(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Получить все отзывы (для админа) - включая неодобренные
+    """
+    reviews = db.query(Review).options(
+        joinedload(Review.user),
+        joinedload(Review.product)
+    ).order_by(
+        Review.created_at.desc()
+    ).offset(offset).limit(limit).all()
+    
+    return reviews
+
+
 @router.get("/admin/pending", response_model=List[ShowReview])
 def get_pending_reviews(
     db: Session = Depends(get_db),
@@ -194,7 +221,9 @@ def get_pending_reviews(
     """
     Получить отзывы, ожидающие модерации (для админа)
     """
-    reviews = db.query(Review).filter(Review.is_approved == False).order_by(
+    reviews = db.query(Review).filter(
+        Review.is_approved == False
+    ).order_by(
         Review.created_at.desc()
     ).all()
     return reviews

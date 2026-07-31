@@ -9,10 +9,8 @@ import os
 from db.session import get_db
 from models.download_token import DownloadToken
 from models.order_item import OrderItem
-from models.order import OrderStatus
+from models.order import Order, OrderStatus
 from models.user import User
-from models.order import Order, OrderStatus 
-from schemas.download_token import DownloadTokenCreate
 from core.dependencies import get_current_user
 from core.config import settings
 
@@ -30,7 +28,8 @@ def create_download_token(
     """
     # Проверка: элемент заказа существует и принадлежит пользователю
     order_item = db.query(OrderItem).options(
-        joinedload(OrderItem.order)
+        joinedload(OrderItem.order),
+        joinedload(OrderItem.product)  # 👈 Добавляем загрузку продукта
     ).filter(OrderItem.id == order_item_id).first()
     
     if not order_item:
@@ -53,11 +52,12 @@ def create_download_token(
             detail="Order not completed yet"
         )
     
-    # Проверка: лимит скачиваний
-    if order_item.download_count >= order_item.order.buyer.download_limit:
+    # ✅ Исправление: лимит скачиваний берём из продукта
+    download_limit = order_item.product.download_limit if order_item.product else 5
+    if order_item.download_count >= download_limit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Download limit exceeded"
+            detail=f"Download limit exceeded ({download_limit})"
         )
     
     # Генерируем токен
@@ -68,8 +68,8 @@ def create_download_token(
         order_item_id=order_item_id,
         token=token_value,
         expires_at=expires_at,
-        ip_address=None,  # Можно добавить из request
-        user_agent=None    # Можно добавить из request
+        ip_address=None,
+        user_agent=None
     )
     
     db.add(download_token)
