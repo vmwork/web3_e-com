@@ -1,4 +1,5 @@
 # app/models/__init__.py
+from db.base import Base
 from models.user import User, UserStatus, WalletType
 from models.user_config import UserConfig
 from models.profile import Profile
@@ -10,6 +11,7 @@ from models.review import Review
 from models.download_token import DownloadToken
 
 __all__ = [
+    "Base",
     "User",
     "UserStatus",
     "WalletType",

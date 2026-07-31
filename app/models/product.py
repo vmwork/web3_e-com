@@ -18,6 +18,7 @@ class Product(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=generate_uuid7, index=True)
     seller_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    slug = Column(String(255), unique=True, nullable=False, index=True)
     
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)

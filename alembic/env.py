@@ -1,11 +1,17 @@
 import os
 import sys
 from logging.config import fileConfig
+from pathlib import Path
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from dotenv import load_dotenv
 
+# Загружаем .env из корня проекта
+load_dotenv()
+
+# Добавляем путь к моделям
 sys.path.append("/app/app")
-from db.base import Base  
+from models import Base
 
 config = context.config
 
@@ -38,7 +44,7 @@ def run_migrations_online() -> None:
         configuration["sqlalchemy.url"] = db_url
 
     connectable = engine_from_config(
-        configuration,  # Передаем модифицированный конфиг
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

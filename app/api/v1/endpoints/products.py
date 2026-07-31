@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func
 from typing import List, Optional
 from uuid import UUID
+import re
 
 from db.session import get_db
 from models.product import Product, ProductStatus
@@ -13,6 +14,15 @@ from core.dependencies import get_current_user, get_current_admin_user
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
+# ==================== ХЕЛПЕРЫ ====================
+def generate_slug(title: str) -> str:
+    """Генерирует slug из названия"""
+    slug = title.lower().strip().replace(" ", "-")
+    slug = re.sub(r"[^a-z0-9-]", "", slug)
+    slug = re.sub(r"-+", "-", slug)
+    return slug
+
+# ==================== ПУБЛИЧНЫЕ ЭНДПОИНТЫ ====================
 
 @router.get("/", response_model=List[ShowProduct])
 def get_products(
@@ -96,13 +106,24 @@ def get_product_by_slug(
     db: Session = Depends(get_db)
 ):
     """
-    Получить продукт по slug (если добавим поле slug)
+    Получить продукт по slug
     """
-    # TODO: добавить slug в модель Product
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Not implemented yet"
-    )
+    product = db.query(Product).options(
+        joinedload(Product.category),
+        joinedload(Product.seller)
+    ).filter(Product.slug == slug).first()
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    # Увеличиваем счётчик просмотров
+    product.views_count += 1
+    db.commit()
+    
+    return product
 
 
 # ==================== АДМИН-ЭНДПОИНТЫ ====================
@@ -116,6 +137,18 @@ def create_product(
     """
     Создать продукт (только для админа)
     """
+    # Генерируем slug, если не передан
+    if not product_data.slug:
+        product_data.slug = generate_slug(product_data.title)
+    
+    # Проверка уникальности slug
+    existing = db.query(Product).filter(Product.slug == product_data.slug).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Product with this slug already exists"
+        )
+    
     # Проверка категории
     if product_data.category_id:
         category = db.query(Category).filter(Category.id == product_data.category_id).first()
@@ -127,7 +160,7 @@ def create_product(
     
     product = Product(
         **product_data.model_dump(),
-        seller_id=current_user.id  # Админ становится продавцом
+        seller_id=current_user.id
     )
     
     # Если продукт сразу публикуется
@@ -158,6 +191,30 @@ def update_product(
         )
     
     update_data = product_data.model_dump(exclude_unset=True)
+    
+    # ❌ Удаляем id, чтобы не обновлять его
+    update_data.pop("id", None)
+    
+    # Проверка category_id
+    if "category_id" in update_data and update_data["category_id"] is not None:
+        category = db.query(Category).filter(Category.id == update_data["category_id"]).first()
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Category not found"
+            )
+    
+    # Проверка уникальности slug
+    if "slug" in update_data and update_data["slug"] != product.slug:
+        existing = db.query(Product).filter(
+            Product.slug == update_data["slug"],
+            Product.id != product_id
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Product with this slug already exists"
+            )
     
     # Если статус меняется на PUBLISHED
     if update_data.get("status") == ProductStatus.PUBLISHED and product.status != ProductStatus.PUBLISHED:

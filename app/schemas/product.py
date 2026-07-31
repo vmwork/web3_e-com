@@ -13,6 +13,7 @@ class ProductStatusEnum(str, Enum):
 
 class ProductBase(BaseModel):
     title: str = Field(..., max_length=255)
+    slug: str = Field(..., max_length=255)
     description: Optional[str] = None
     short_description: Optional[str] = Field(None, max_length=500)
     price: float = Field(..., gt=0)
@@ -35,11 +36,12 @@ class ProductBase(BaseModel):
 
 
 class ProductCreate(ProductBase):
-    seller_id: UUID
+    pass
 
 
 class ProductUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=255)
+    slug: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
     short_description: Optional[str] = Field(None, max_length=500)
     price: Optional[float] = Field(None, gt=0)
