@@ -1,6 +1,6 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 import os
@@ -25,9 +25,11 @@ from schemas.user import (
     RegisterRequest,
     ShowUser
 )
-
+from schemas.auth import(AuthStatusResponse)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 # ==================== OAuth2 СТАНДАРТНЫЙ ЭНДПОИНТ ====================
 
@@ -378,11 +380,19 @@ def logout():
     return {"message": "Successfully logged out"}
 
 
-@router.get("/me", response_model=ShowUser)
-def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+@router.get("/me", response_model=AuthStatusResponse)
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user),
+    token: str = Depends(oauth2_scheme)
 ):
-    """
-    Получить информацию о текущем пользователе
-    """
-    return current_user
+    # Можно декодировать токен, чтобы получить время жизни
+    return AuthStatusResponse(
+        authenticated=True,
+        user_id=str(current_user.id),
+        wallet_address=current_user.wallet_address,
+        email=current_user.email,
+        role=current_user.role,
+        token_expires_in=10080,  # из настроек
+        scopes=["read", "write"],
+        last_active=current_user.last_active
+    )
