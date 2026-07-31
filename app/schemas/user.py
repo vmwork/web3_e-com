@@ -58,7 +58,11 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     display_name: Optional[str] = Field(None, max_length=50)
     email: Optional[str] = Field(None, max_length=255)
-    is_email_verified: Optional[bool] = None
+    phone: Optional[str] = Field(None, max_length=20)
+    avatar_url: Optional[str] = Field(None, max_length=500)
+    bio: Optional[str] = None
+    location: Optional[str] = Field(None, max_length=100)
+    website: Optional[str] = Field(None, max_length=255)
 
 
 class ShowUser(BaseModel):
