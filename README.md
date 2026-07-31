@@ -1,3 +1,4 @@
+markdown
 # Digital Products E-commerce Platform (MVP) 🚀
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=Python)](https://python.org)
@@ -111,11 +112,10 @@ web3_e-com/
 ├── requirements.txt
 ├── .env
 └── README.md
-
 ⚡ Быстрый старт
 1️⃣ Клонирование репозитория
 bash
-git clone 
+git clone <repository-url>
 cd web3_e-com
 2️⃣ Настройка окружения
 Создайте файл .env на основе примера:
@@ -140,7 +140,7 @@ ADMIN_WALLET_ADDRESS=0x90F8bf6A479f320ced073E5743F257356671B414
 3️⃣ Запуск через Docker
 bash
 docker-compose up --build
-📦 При первом запуске автоматически:
+При первом запуске автоматически:
 
 Создаются таблицы в PostgreSQL
 
@@ -179,7 +179,7 @@ POST	/api/v1/auth/register	Регистрация по email + пароль	Пу
 POST	/api/v1/auth/login	Вход по email + пароль	Публичный
 POST	/api/v1/auth/token	OAuth2 эндпоинт для Swagger	Публичный
 POST	/api/v1/auth/logout	Выход из системы	Авторизованный
-GET	/api/v1/auth/me	Информация о текущем пользователе	Авторизованный
+GET	    /api/v1/auth/me	Информация о текущем пользователе	Авторизованный
 POST	/api/v1/auth/connect/wallet	Привязка кошелька к email-аккаунту	Авторизованный
 DELETE	/api/v1/auth/connect/wallet	Отвязка кошелька от аккаунта	Авторизованный
 👤 Пользователи
@@ -204,6 +204,7 @@ DELETE	/api/v1/categories/{id}	Удалить категорию	Только а
 Метод	Эндпоинт	Описание	Доступ
 GET	/api/v1/products/	Список продуктов (с фильтрацией)	Публичный
 GET	/api/v1/products/{id}	Детали продукта	Публичный
+GET	/api/v1/products/slug/{slug}	Детали продукта по slug	Публичный
 POST	/api/v1/products/	Создать продукт	Только админ
 PUT	/api/v1/products/{id}	Обновить продукт	Только админ
 DELETE	/api/v1/products/{id}	Удалить продукт	Только админ
@@ -221,6 +222,7 @@ GET	/api/v1/reviews/products/{id}	Отзывы на продукт	Публич�
 POST	/api/v1/reviews/	Создать отзыв	Авторизованный
 PUT	/api/v1/reviews/{id}	Обновить отзыв	Автор
 DELETE	/api/v1/reviews/{id}	Удалить отзыв	Автор/Админ
+GET	/api/v1/reviews/admin/all	Все отзывы	Только админ
 GET	/api/v1/reviews/admin/pending	Отзывы на модерации	Только админ
 PUT	/api/v1/reviews/admin/{id}/approve	Одобрить отзыв	Только админ
 ⬇️ Скачивания
@@ -263,6 +265,9 @@ docker-compose restart backend
 
 # Вход в контейнер бэкенда
 docker exec -it crypto_backend_app /bin/bash
+
+# Вход в контейнер PostgreSQL
+docker exec -it crypto_postgres_db psql -U crypto_user -d crypto_db_api
 🔧 Переменные окружения (.env)
 Переменная	Описание	Пример
 POSTGRES_USER	Пользователь PostgreSQL	crypto_user
@@ -276,6 +281,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES	Время жизни токена	10080 (7 дней
 ADMIN_WALLET_ADDRESS	Кошелёк админа (Web3)	0x90F8bf...
 📄 Лицензия
 MIT License — свободно используйте в коммерческих и личных проектах.
+
 
 👨‍💻 Разработчик
 ### 🔗 Разработчик: Vladyslav | Senior Fullstack Developer
