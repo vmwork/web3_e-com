@@ -37,13 +37,14 @@ def get_categories(
     return categories
 
 
+
 @router.get("/{category_id}", response_model=ShowCategory)
 def get_category(
     category_id: UUID,
     db: Session = Depends(get_db)
 ):
     """
-    Получить категорию по ID
+    Получить категорию по ID с подкатегориями
     """
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
@@ -51,7 +52,7 @@ def get_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found"
         )
-    return category
+    return category  # children подгружаются через relationship
 
 
 @router.get("/slug/{slug}", response_model=ShowCategory)
@@ -60,7 +61,7 @@ def get_category_by_slug(
     db: Session = Depends(get_db)
 ):
     """
-    Получить категорию по slug
+    Получить категорию по slug с подкатегориями
     """
     category = db.query(Category).filter(Category.slug == slug).first()
     if not category:
@@ -113,9 +114,6 @@ def update_category(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user)
 ):
-    """
-    Обновить категорию (только для админа)
-    """
     category = db.query(Category).filter(Category.id == category_id).first()
     if not category:
         raise HTTPException(
@@ -123,15 +121,18 @@ def update_category(
             detail="Category not found"
         )
     
-    # Проверка slug на уникальность
-    if category_data.slug and category_data.slug != category.slug:
-        existing = db.query(Category).filter(Category.slug == category_data.slug).first()
+    if category_data.slug is not None and category_data.slug != category.slug:
+        existing = db.query(Category).filter(
+            Category.slug == category_data.slug,
+            Category.id != category_id  # 👈 Исключаем себя
+        ).first()
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Category with this slug already exists"
             )
     
+    # Обновляем только переданные поля
     update_data = category_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(category, key, value)

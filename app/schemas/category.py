@@ -23,7 +23,6 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     slug: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = None
-    parent_id: Optional[UUID] = None
     icon: Optional[str] = Field(None, max_length=255)
     color: Optional[str] = Field(None, max_length=7)
     sort_order: Optional[int] = None
@@ -34,6 +33,11 @@ class ShowCategory(CategoryBase):
     id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
+    children: List["ShowCategory"] = []  # 👈 Добавляем поле для подкатегорий
 
     class Config:
         from_attributes = True
+
+
+# 👈 Обязательно! Для рекурсивных ссылок в Pydantic v2
+ShowCategory.model_rebuild()
